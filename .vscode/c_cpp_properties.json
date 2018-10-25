@@ -3,8 +3,12 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
-                "/usr/local/include/libtcod/**"
+                "${workspaceFolder}/tutorial1/include",
+                "${workspaceFolder}/tutorial2/include",
+                "${workspaceFolder}/tutorial3/include",
+                "/usr/local/include/libtcod",
+                "/usr/local/include",
+                "/usr/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

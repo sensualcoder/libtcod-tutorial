@@ -7,7 +7,7 @@ namespace tcodtutorial
     static const TCODColor DarkWall(0, 0, 100);
     static const TCODColor DarkGround(50, 50, 150);
 
-    Map::Map(int width, int height) : Width(width), Height(height)
+    Map::Map(int width, int height) : Width(width), Height(height), Tiles(width, height)
     {
         for(size_t i = 0; i < width*height; ++i)
         {

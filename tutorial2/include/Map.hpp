@@ -1,17 +1,10 @@
 #ifndef MAP_HPP
 #define MAP_HPP
 
-#include <vector>
+#include "Tile.hpp"
 
 namespace tcodtutorial
 {
-    struct Tile
-    {
-        Tile() : CanWalk(true) {}
-
-        bool CanWalk;
-    };
-
     class Map
     {
         public:
@@ -24,7 +17,7 @@ namespace tcodtutorial
 
         private:
             int Width, Height;
-            std::vector<Tile> Tiles;
+            TileList Tiles;
     };
 }
 
