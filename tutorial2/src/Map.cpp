@@ -1,19 +1,14 @@
 #include "Map.hpp"
 
-#include "libtcod/libtcod.hpp"
+#include <libtcod/libtcod.hpp>
 
 namespace tcodtutorial
 {
     static const TCODColor DarkWall(0, 0, 100);
     static const TCODColor DarkGround(50, 50, 150);
 
-    Map::Map(int width, int height) : Width(width), Height(height), Tiles(width, height)
+    Map::Map(int width, int height) : Width(width), Height(height), Tiles(width*height, Tile() )
     {
-        for(size_t i = 0; i < width*height; ++i)
-        {
-            this->Tiles.push_back(Tile() );
-        }
-
         SetWall(30, 22);
         SetWall(50, 22);
     }

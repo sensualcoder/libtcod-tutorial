@@ -1,7 +1,7 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
 
-#include "libtcod.hpp"
+#include <libtcod/libtcod.hpp>
 
 namespace tcodtutorial
 {
@@ -19,6 +19,8 @@ namespace tcodtutorial
             void MoveDown();
             void MoveLeft();
             void MoveRight();
+
+            void SetPos(int posX, int posY);
 
         private:
             int PosX, PosY;

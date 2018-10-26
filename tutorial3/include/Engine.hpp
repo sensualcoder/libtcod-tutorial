@@ -2,8 +2,9 @@
 #define ENGINE_HPP
 
 #include <memory>
+#include <vector>
 
-#include "libtcod.hpp"
+#include <libtcod/libtcod.hpp>
 
 #include "Actor.hpp"
 #include "Map.hpp"
@@ -23,7 +24,7 @@ namespace tcodtutorial
 
         private:
             TCODList<Actor*> Actors;
-            std::unique_ptr<Actor> Player, NPC;
+            std::unique_ptr<Actor> Player;
             std::unique_ptr<Map> GameMap;
     };
 }

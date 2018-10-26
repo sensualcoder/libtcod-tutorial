@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "libtcod/libtcod.hpp"
+#include <libtcod/libtcod.hpp>
 
 #include "Actor.hpp"
 #include "Map.hpp"

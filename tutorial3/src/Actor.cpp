@@ -41,4 +41,10 @@ namespace tcodtutorial
     {
         ++this->PosX;
     }
+
+    void Actor::SetPos(int posX, int posY)
+    {
+        this->PosX = posX;
+        this->PosY = posY;
+    }
 }

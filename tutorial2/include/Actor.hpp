@@ -1,7 +1,7 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
 
-#include "libtcod/libtcod.hpp"
+#include <libtcod/libtcod.hpp>
 
 namespace tcodtutorial
 {

@@ -6,13 +6,16 @@ namespace tcodtutorial
     {
         TCODConsole::initRoot(80, 50, "libtcod C++ tutorial 2");
 
-        this->Player = std::make_unique<Actor>(40, 25, '@', TCODColor::white);
-        this->NPC = std::make_unique<Actor>(60, 13, '@', TCODColor::yellow);
-
-        this->Actors.push(this->Player.get() );
-        this->Actors.push(this->NPC.get() );
-
         this->GameMap = std::make_unique<Map>(80, 45);
+
+        Room firstRoom = this->GameMap->GetRoom(0);
+        this->Player = std::make_unique<Actor>(firstRoom.PosX, firstRoom.PosY, '@', TCODColor::white);
+        this->Actors.push(this->Player.get() );
+
+        for(auto room = this->GameMap->GetRooms().begin() + 1; room != this->GameMap->GetRooms().end(); room++)
+        {
+            this->Actors.push(new Actor(room->PosX, room->PosY, '@', TCODColor::yellow) );
+        }
     }
 
     void Engine::Update()
@@ -24,33 +27,58 @@ namespace tcodtutorial
         switch(key.vk) 
         {
             case TCODK_UP: 
+            {
                 if(!this->GameMap->IsWall(
-                    this->Player->GetX(), this->Player->GetY()-1) )
+                    this->Player->GetX(), this->Player->GetY() - 1) )
                 {
                     this->Player->MoveUp();   
                 }
                 break;
+            }
             case TCODK_DOWN: 
+            {
                 if(!this->GameMap->IsWall(
-                    this->Player->GetX(), this->Player->GetY()+1) )
+                    this->Player->GetX(), this->Player->GetY() + 1) )
                 {
                     this->Player->MoveDown();
                 }
                 break;
+            }
             case TCODK_LEFT: 
+            {
                 if(!this->GameMap->IsWall(
-                    this->Player->GetX()-1, this->Player->GetY() ) )
+                    this->Player->GetX() - 1, this->Player->GetY() ) )
                 {
                     this->Player->MoveLeft(); 
                 }
                 break;
+            }
             case TCODK_RIGHT: 
+            {
                 if(!this->GameMap->IsWall(
-                    this->Player->GetX()+1, this->Player->GetY() ) )
+                    this->Player->GetX() + 1, this->Player->GetY() ) )
                 {
                    this->Player->MoveRight(); 
                 }
                 break;
+            }
+            case TCODK_ENTER:
+            {
+                this->GameMap->GenMap();
+
+                Room firstRoom = this->GameMap->GetRoom(0);
+
+                this->Actors.clear();
+                this->Player->SetPos(firstRoom.PosX, firstRoom.PosY);
+
+                this->Actors.push(this->Player.get() );
+
+                for(auto room = this->GameMap->GetRooms().begin() + 1; room != this->GameMap->GetRooms().end(); room++)
+                {
+                    this->Actors.push(new Actor(room->PosX, room->PosY, '@', TCODColor::yellow) );
+                }
+                break;
+            }
             default:
                 break;
         }
