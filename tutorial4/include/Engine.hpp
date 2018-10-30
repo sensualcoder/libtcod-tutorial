@@ -18,13 +18,18 @@ namespace tcodtutorial
         public:
             Engine();
 
+            void GenerateMap();
+
             void Update();
-            void Render();
+            void Render() const;
 
         private:
             TCODList<Actor*> Actors;
-            std::unique_ptr<Actor> Player, NPC;
+            std::unique_ptr<Actor> Player;
             std::unique_ptr<Map> GameMap;
+
+            int FovRadius;
+            bool ComputeFov;
     };
 }
 

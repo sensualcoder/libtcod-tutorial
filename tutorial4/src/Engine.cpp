@@ -2,22 +2,45 @@
 
 namespace tcodtutorial
 {
-    Engine::Engine()
+    Engine::Engine() : FovRadius(10), ComputeFov(true)
     {
-        TCODConsole::initRoot(80, 50, "libtcod C++ tutorial 2");
+        TCODConsole::initRoot(80, 50, "libtcod C++ tutorial 4");
 
         this->GameMap = std::make_unique<Map>(80, 45);
 
-        Room firstRoom = this->GameMap->GetRoom(0);
+        Room firstRoom = this->GameMap->GetRooms()[0];
         this->Player = std::make_unique<Actor>(firstRoom.PosX, firstRoom.PosY, '@', TCODColor::white);
         this->Actors.push(this->Player.get() );
+
+        for(size_t i = 1; i < this->GameMap->GetRooms().size(); ++i)
+        {
+            Room room = this->GameMap->GetRooms()[i];
+            this->Actors.push(new Actor(room.PosX, room.PosY, '@', TCODColor::white) );
+        }
+    }
+
+    void Engine::GenerateMap()
+    {
+        this->Actors.clear();
+
+        this->GameMap->GenerateMap();
+        
+        Room firstRoom = this->GameMap->GetRooms()[0];
+        this->Player->SetPos(firstRoom.PosX, firstRoom.PosY);
+        this->Actors.push(this->Player.get() );
+
+        for(size_t i = 1; i < this->GameMap->GetRooms().size(); ++i)
+        {
+            Room room = this->GameMap->GetRooms()[i];
+            this->Actors.push(new Actor(room.PosX, room.PosY, '@', TCODColor::white) );
+        }
     }
 
     void Engine::Update()
     {
         TCOD_key_t key;
         
-        TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &key, NULL);
+        TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &key, nullptr);
         
         switch(key.vk) 
         {
@@ -27,6 +50,7 @@ namespace tcodtutorial
                     this->Player->GetX(), this->Player->GetY()-1) )
                 {
                     this->Player->MoveUp();   
+                    this->ComputeFov = true;
                 }
                 break;
             }
@@ -36,6 +60,7 @@ namespace tcodtutorial
                     this->Player->GetX(), this->Player->GetY()+1) )
                 {
                     this->Player->MoveDown();
+                    this->ComputeFov = true;
                 }
                 break;
             }
@@ -45,6 +70,7 @@ namespace tcodtutorial
                     this->Player->GetX()-1, this->Player->GetY() ) )
                 {
                     this->Player->MoveLeft(); 
+                    this->ComputeFov = true;
                 }
                 break;
             }
@@ -54,22 +80,31 @@ namespace tcodtutorial
                     this->Player->GetX()+1, this->Player->GetY() ) )
                 {
                    this->Player->MoveRight(); 
+                   this->ComputeFov = true;
                 }
                 break;
             }
             case TCODK_ENTER:
             {
-                this->GameMap->GenMap();
-                Room firstRoom = this->GameMap->GetRoom(0);
-                this->Player->SetPos(firstRoom.PosX, firstRoom.PosY);
+                this->GenerateMap();
+
+                this->ComputeFov = true;
                 break;
             }
             default:
                 break;
         }
+
+        if(this->ComputeFov)
+        {
+            this->GameMap->ComputeFov(this->Player->GetX(), this->Player->GetY(), this->FovRadius);
+            this->GameMap->SetExplored();
+
+            this->ComputeFov = false;
+        }
     }
     
-    void Engine::Render()
+    void Engine::Render() const
     {
         TCODConsole::root->clear();
 
@@ -77,7 +112,10 @@ namespace tcodtutorial
 
         for(auto actor : this->Actors)
         {
-            actor->Render();
+            if(this->GameMap->IsInFov(actor->GetX(), actor->GetY() ) )
+            {
+                actor->Render();
+            }
         }
     }
 }

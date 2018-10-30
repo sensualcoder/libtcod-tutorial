@@ -1,7 +1,10 @@
 #ifndef MAP_HPP
 #define MAP_HPP
 
+#include <memory>
 #include <vector>
+
+#include <libtcod/libtcod.hpp>
 
 namespace tcodtutorial
 {
@@ -12,9 +15,9 @@ namespace tcodtutorial
 
     struct Tile 
     {
-        Tile() : CanWalk(false) {}
+        Tile() : IsExplored(false) {}
 
-        bool CanWalk; // can we walk through this tile?
+        bool IsExplored; // has the player seen this tile?
     };
     
     class Map 
@@ -23,17 +26,23 @@ namespace tcodtutorial
             Map(int width, int height);
 
             bool IsWall(int x, int y) const;
-            const Room& GetRoom(int index) const;
+            bool IsInFov(int x, int y) const;
+            bool IsExplored(int x, int y) const;
+            
+            const std::vector<Room>& GetRooms() const;
             
             void Render() const;
 
             void Dig(int x1, int y1, int x2, int y2);
-            void GenMap();
+            void SetExplored();
+            void ComputeFov(int x, int y, int radius);
+            void GenerateMap();
             
         private:
             int Width, Height;
             std::vector<Tile> Tiles;
             std::vector<Room> Rooms;
+            std::unique_ptr<TCODMap> TileMap;
     };
 }
 
