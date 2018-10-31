@@ -3,9 +3,7 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/tutorial1/include",
-                "${workspaceFolder}/tutorial2/include",
-                "${workspaceFolder}/tutorial3/include",
+                "${workspaceFolder}/**/include",
                 "/usr/local/include",
                 "/usr/include"
             ],
