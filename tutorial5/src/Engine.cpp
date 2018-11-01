@@ -164,6 +164,7 @@ namespace tcodtutorial
             if(this->MoveOrAttack(this->Player->GetX() + dx, this->Player->GetY() + dy) )
             {
                 this->GameMap->ComputeFov(this->Player->GetX(), this->Player->GetY(), this->FovRadius);
+                this->GameMap->SetExplored();
             }
         }
 
