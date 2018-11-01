@@ -15,5 +15,6 @@ add_subdirectory(tutorial2)
 add_subdirectory(tutorial3)
 add_subdirectory(tutorial4)
 add_subdirectory(tutorial5)
+add_subdirectory(tutorial6)
 
 file(COPY terminal.png DESTINATION .)
