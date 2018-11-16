@@ -2,49 +2,47 @@
 #define ENGINE_HPP
 
 #include <memory>
+#include <vector>
 
 #include <libtcod/libtcod.hpp>
 
-#include "Actor.hpp"
+#include "Entity.hpp"
+#include "Event.hpp"
+#include "GameState.hpp"
 #include "Map.hpp"
+#include "Observer.hpp"
 
 namespace tcodtutorial
 {
-    class Actor;
-    class Map;
+    using EntityShrPtr = std::shared_ptr<Entity>;
 
-    enum GameState
-    {
-        STARTUP,
-        IDLE,
-        NEW_TURN,
-        VICTORY,
-        DEFEAT
-    };
-
-    class Engine
+    class Engine : public Observer
     {
         public:
             Engine();
 
             void GenerateMap();
             void GenerateMonsters();
-            void AddMonster(int x, int y);
+            
+            void AddMonster(Point point);
+            void ClearEntities();
 
-            bool MoveOrAttack(int x, int y);
+            bool CanWalk(Point point) const;
 
-            bool CanWalk(int x, int y) const;
+            // Implemented from Observer pure virtual method
+            void OnNotify(const Entity& entity, Event event);
 
+            void HandleInput();
             void Update();
             void Render() const;
 
         private:
-            TCODList<Actor*> Actors;
-            std::unique_ptr<Actor> Player;
-            std::unique_ptr<Map> GameMap;
+            std::vector<EntityShrPtr> entitylist_;
+            EntityShrPtr playerptr_;
+            std::unique_ptr<Map> map_;
 
             int FovRadius;
-            GameState State;
+            GameState_t State;
     };
 }
 

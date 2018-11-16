@@ -150,6 +150,7 @@ namespace tcodtutorial
             }
             case TCODK_ENTER:
             {
+                this->State = GameState::STARTUP;
                 this->GenerateMap();
                 break;
             }

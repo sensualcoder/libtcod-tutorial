@@ -1,107 +1,102 @@
 #include "Engine.hpp"
 
-#include <cstdio>
-
 namespace tcodtutorial
 {
     static const int MAX_ROOM_MONSTERS = 3;
 
-    Engine::Engine() : GameMap(new Map(80, 45) ), State(GameState::STARTUP), FovRadius(10)
+    Engine::Engine() : map_(new Map(80, 45) ), State(STARTUP), FovRadius(10)
     {
         TCODConsole::initRoot(80, 50, "libtcod C++ tutorial 6");
 
-        Room firstRoom = this->GameMap->GetRooms()[0];
-        this->Player = std::make_unique<Actor>(firstRoom.PosX, firstRoom.PosY, 
+        Room firstRoom = map_->GetRooms()[0];
+        playerptr_ = std::make_shared<Player>(firstRoom.center_, 
             '@', "player", TCODColor::white);
-        this->Actors.push(this->Player.get() );
+        playerptr_->AddObserver(this);
 
-        this->GenerateMonsters();
+        entitylist_.push_back(playerptr_);
+
+        GenerateMonsters();
     }
 
     void Engine::GenerateMap()
     {
-        this->Actors.clear();
+        ClearEntities();
 
-        this->GameMap->GenerateMap();
+        map_->GenerateMap();
         
-        Room firstRoom = this->GameMap->GetRooms()[0];
-        this->Player->SetPos(firstRoom.PosX, firstRoom.PosY);
-        this->Actors.push(this->Player.get() );
+        Room firstRoom = map_->GetRooms()[0];
 
-        this->GenerateMonsters();
+        playerptr_->AddObserver(this);
+        playerptr_->SetPos(Point { firstRoom.center_.x_, firstRoom.center_.y_ } );
+        entitylist_.push_back(playerptr_);
+
+        GenerateMonsters();
     }
 
     void Engine::GenerateMonsters()
     {
         TCODRandom* rng = TCODRandom::getInstance();
 
-        for(auto room = this->GameMap->GetRooms().begin() + 1;
-            room != this->GameMap->GetRooms().end(); ++room)
+        for(auto room = map_->GetRooms().begin() + 1;
+            room != map_->GetRooms().end(); ++room)
         {
             int numMonsters = rng->getInt(0, MAX_ROOM_MONSTERS);
             for( ; numMonsters > 0; --numMonsters)
             {
-                int x = rng->getInt(room->X1, room->X2);
-                int y = rng->getInt(room->Y1, room->Y2);
+                Point point
+                { 
+                    rng->getInt(room->topleft_.x_, room->bottomright_.x_),
+                    rng->getInt(room->topleft_.y_, room->bottomright_.y_)
+                };
 
-                if(this->CanWalk(x, y) )
+                if(CanWalk(point) )
                 {
-                    this->AddMonster(x, y);
+                    AddMonster(point);
                 }
             }
         }
     }
 
-    void Engine::AddMonster(int x, int y)
+    void Engine::AddMonster(Point point)
     {
         TCODRandom* rng = TCODRandom::getInstance();
 
+        std::shared_ptr<Entity> monster;
+
         if(rng->getInt(0, 100) < 80)
         {
-            this->Actors.push(new Enemy(x, y, 'o', "orc", 
+            monster = std::shared_ptr<NPC>(new NPC(point, 'o', "orc", 
                 TCODColor::desaturatedGreen) );
+            entitylist_.push_back(monster);
         }
         else
         {
-            this->Actors.push(new Enemy(x, y, 'T', "troll", 
+            monster = std::shared_ptr<NPC>(new NPC(point, 'T', "troll", 
                 TCODColor::darkerGreen) );
+            entitylist_.push_back(monster);
+        }
+        
+        monster->AddObserver(this);
+    }
+
+    void Engine::ClearEntities()
+    {
+        for(auto i : entitylist_)
+        {
+            i->Clear();
         }
     }
 
-    bool Engine::MoveOrAttack(int x, int y)
+    bool Engine::CanWalk(Point point) const
     {
-        if(this->GameMap->IsWall(x, y) )
+        if(map_->IsWall(point) )
         {
             return false;
         }
 
-        for(auto it = this->Actors.begin() + 1; it != this->Actors.end(); ++it)
+        for(auto entity : entitylist_)
         {
-            auto actor = *it;
-
-            if(actor->GetX() == x && actor->GetY() == y)
-            {
-                printf("The %s laughs at your puny attempts to attack him!\n", actor->GetName().c_str() );
-
-                return false;
-            }
-        }
-
-        this->Player->SetPos(x, y);
-
-        return true;
-    }
-
-    bool Engine::CanWalk(int x, int y) const
-    {
-        if(this->GameMap->IsWall(x, y) )
-        {
-            return false;
-        }
-
-        for(auto actor : this->Actors)
-        {
-            if(actor->GetX() == x && actor->GetY() == y)
+            if(entity->GetX() == point.x_ && entity->GetY() == point.y_)
             {
                 return false;
             }
@@ -110,72 +105,78 @@ namespace tcodtutorial
         return true;
     }
 
-    void Engine::Update()
+    // Implemented from Observer pure virtual method
+    void Engine::OnNotify(const Entity& entity, Event event)
+    {
+    }
+
+    void Engine::HandleInput()
     {
         TCOD_key_t key;
 
-        if(this->State == GameState::STARTUP)
-        {
-            this->GameMap->ComputeFov(this->Player->GetX(), this->Player->GetY(), this->FovRadius);
-        }
-
-        this->State = GameState::IDLE;
-        
         TCODSystem::checkForEvent(TCOD_EVENT_KEY_PRESS, &key, nullptr);
 
         int dx = 0,
             dy = 0;
-        
-        switch(key.vk) 
+
+        switch(key.vk)
         {
-            case TCODK_UP: 
-            {
+            case TCODK_UP:
                 --dy;
                 break;
-            }
-            case TCODK_DOWN: 
-            {
+            case TCODK_DOWN:
                 ++dy;
                 break;
-            }
-            case TCODK_LEFT: 
-            {
+            case TCODK_LEFT:
                 --dx;
                 break;
-            }
-            case TCODK_RIGHT: 
-            {
+            case TCODK_RIGHT:
                 ++dx;
                 break;
-            }
-            case TCODK_ENTER:
-            {
-                this->GenerateMap();
-                break;
-            }
             default:
                 break;
         }
 
         if(dx != 0 || dy != 0)
         {
-            this->State = NEW_TURN;
+            Point point 
+            { 
+                playerptr_->GetX() + dx,
+                playerptr_->GetY() + dy
+            };
 
-            if(this->MoveOrAttack(this->Player->GetX() + dx, this->Player->GetY() + dy) )
+            if(CanWalk(point) )
             {
-                this->GameMap->ComputeFov(this->Player->GetX(), this->Player->GetY(), this->FovRadius);
-                this->GameMap->SetExplored();
+                playerptr_->SetPos(point);
+                State = NEW_TURN;
             }
         }
+    }
 
-        if(this->State == NEW_TURN)
+    void Engine::Update()
+    {
+        if(State == STARTUP)
         {
-            for(auto actor : this->Actors)
+            map_->ComputeFov(Point { playerptr_->GetX(), playerptr_->GetY() }, FovRadius);
+        }
+
+        State = IDLE;
+
+        HandleInput();
+
+        playerptr_->Update();
+
+        if(State == NEW_TURN)
+        {
+            map_->ComputeFov(Point { playerptr_->GetX(), playerptr_->GetY() }, FovRadius);
+            map_->SetExplored();
+            
+            for(auto entity : entitylist_)
             {
-                if(actor != this->Player.get() 
-                    && this->GameMap->IsInFov(actor->GetX(), actor->GetY() ) )
+                if(entity != playerptr_
+                    && map_->IsInFov(Point { entity->GetX(), entity->GetY() } ) )
                 {
-                    actor->Update();
+                    entity->Update();
                 }
             }
         }
@@ -185,13 +186,13 @@ namespace tcodtutorial
     {
         TCODConsole::root->clear();
 
-        this->GameMap->Render();
+        map_->Render();
 
-        for(auto actor : this->Actors)
+        for(auto entity : entitylist_)
         {
-            if(this->GameMap->IsInFov(actor->GetX(), actor->GetY() ) )
+            if(map_->IsInFov(Point { entity->GetX(), entity->GetY() } ) )
             {
-                actor->Render();
+                entity->Render();
             }
         }
     }

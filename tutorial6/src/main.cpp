@@ -2,11 +2,6 @@
 
 #include "Engine.hpp"
 
-namespace tcodtutorial
-{
-    class Engine;
-}
-
 int main()
 {
     tcodtutorial::Engine engine;

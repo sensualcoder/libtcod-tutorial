@@ -13,7 +13,7 @@ namespace tcodtutorial
     class BspListener : public ITCODBspCallback 
     {
         public:
-            BspListener(Map* map) : GameMap(map), RoomNum(0) {}
+            BspListener(Map* map) : map_(map), RoomNum(0) {}
             
             bool visitNode(TCODBsp* node, void* userData) 
             {
@@ -29,25 +29,30 @@ namespace tcodtutorial
                     x = rng->getInt(node->x + 1, node->x + node->w - w - 1);
                     y = rng->getInt(node->y + 1, node->y + node->h - h - 1);
                     
-                    Room room = Room { x, y, x + w - 1, y + h - 1, x + w / 2, y + h / 2 };
-                    this->GameMap->Dig(room);
+                    Room room = Room 
+                    { 
+                        { x, y }, 
+                        { x + w - 1, y + h - 1 }, 
+                        { x + w / 2, y + h / 2 } 
+                    };
+                    map_->Dig(room);
                     
                     if(RoomNum > 0) 
                     {
                         // dig a corridor from last room
-                        this->GameMap->Dig(this->LastX, this->LastY, x + w / 2, this->LastY);
-                        this->GameMap->Dig(x + w / 2, this->LastY, x + w / 2, y + h / 2);
+                        map_->Dig(Point { LastX, LastY }, Point { x + w / 2, LastY } );
+                        map_->Dig(Point { x + w / 2, LastY }, Point { x + w / 2, y + h / 2 } );
                     }
                     
-                    this->LastX = x + w / 2;
-                    this->LastY = y + h / 2;
+                    LastX = x + w / 2;
+                    LastY = y + h / 2;
                     ++RoomNum;
                 }
                 return true;
             }
 
         private:
-            Map* GameMap; // a map to dig
+            Map* map_; // a map to dig
             int RoomNum; // room number
             int LastX, LastY; // center of the last room
     };
@@ -62,14 +67,14 @@ namespace tcodtutorial
         bsp.traverseInvertedLevelOrder(&listener, nullptr);
     }
 
-    bool Map::IsWall(int x, int y) const 
+    bool Map::IsWall(Point point) const 
     {
-        return !this->TileMap->isWalkable(x, y);
+        return !TileMap->isWalkable(point.x_, point.y_);
     }
 
-    bool Map::IsInFov(int x, int y) const
+    bool Map::IsInFov(Point point) const
     {
-        if(this->TileMap->isInFov(x, y) )
+        if(TileMap->isInFov(point.x_, point.y_) )
         {
             return true;
         }
@@ -77,96 +82,98 @@ namespace tcodtutorial
         return false;
     }
 
-    bool Map::IsExplored(int x, int y) const
+    bool Map::IsExplored(Point point) const
     {
-        return this->Tiles[x + y * this->Width].IsExplored;
+        return Tiles[point.x_ + point.y_ * Width].IsExplored;
     }
 
     const std::vector<Room>& Map::GetRooms() const
     {
-        return this->Rooms;
+        return Rooms;
     }
     
     void Map::Render() const 
     {
-        for (int x = 0; x < this->Width; x++)
+        for (int x = 0; x < Width; x++)
         {
-            for (int y = 0; y < this->Height; y++) 
-            {
-                if(this->IsInFov(x, y) )
+            for (int y = 0; y < Height; y++) 
+            {  
+                Point point { x, y };
+
+                if(IsInFov(point) )
                 {
                     TCODConsole::root->setCharBackground( x, y,
-                        this->IsWall(x, y) ? LightWall : LightGround );
+                        IsWall(point) ? LightWall : LightGround );
                 }
-                else if(this->IsExplored(x, y) )
+                else if(IsExplored(point) )
                 {
                     TCODConsole::root->setCharBackground( x, y,
-                        this->IsWall(x, y) ? DarkWall : DarkGround );
+                        IsWall(point) ? DarkWall : DarkGround );
                 }
             }
         }
     }
 
-    void Map::Dig(int x1, int y1, int x2, int y2) 
+    void Map::Dig(Point point1, Point point2) 
     {
-        if(x2 < x1) 
+        if(point2.x_ < point1.x_) 
         {
-            int tmp = x2;
-            x2 = x1;
-            x1 = tmp;
+            int tmp = point2.x_;
+            point2.x_ = point1.x_;
+            point1.x_ = tmp;
         }
 
-        if(y2 < y1)
+        if(point2.y_ < point1.y_) 
         {
-            int tmp = y2;
-            y2 = y1;
-            y1 = tmp;
+            int tmp = point2.y_;
+            point2.y_ = point1.y_;
+            point1.y_ = tmp;
         }
 
-        for (int x = x1; x <= x2; ++x)
+        for (int x = point1.x_; x <= point2.x_; ++x)
         {
-            for (int y = y1; y <= y2; ++y)
+            for (int y = point1.y_; y <= point2.y_; ++y)
             {
-                this->TileMap->setProperties(x, y, true, true);
+                TileMap->setProperties(x, y, true, true);
             }
         }
     }
 
     void Map::Dig(Room room)
     {
-        this->Dig(room.X1, room.Y1, room.X2, room.Y2);
-        this->Rooms.push_back(room);
+        Dig(room.topleft_, room.bottomright_);
+        Rooms.push_back(room);
     }
 
     void Map::SetExplored()
     {
-        for (int x = 0; x < this->Width; x++)
+        for (int x = 0; x < Width; x++)
         {
-            for (int y = 0; y < this->Height; y++) 
+            for (int y = 0; y < Height; y++) 
             {
-                if(this->IsInFov(x, y) )
+                if(IsInFov(Point { x, y } ) )
                 {
-                    this->Tiles[x + y * this->Width].IsExplored = true;
+                    Tiles[x + y * Width].IsExplored = true;
                 }
             }
         }
     }
 
-    void Map::ComputeFov(int x, int y, int radius)
+    void Map::ComputeFov(Point point, int radius)
     {
-        this->TileMap->computeFov(x, y, radius);
+        TileMap->computeFov(point.x_, point.y_, radius);
     }
 
     void Map::GenerateMap()
     {
-        this->Tiles.clear();
-        this->Tiles = std::vector<Tile>(this->Width * this->Height, Tile() );
+        Tiles.clear();
+        Tiles = std::vector<Tile>(Width * Height, Tile() );
 
-        this->TileMap = std::make_unique<TCODMap>(this->Width, this->Height);
+        TileMap = std::make_unique<TCODMap>(Width, Height);
 
-        this->Rooms.clear();
+        Rooms.clear();
 
-        TCODBsp bsp(0, 0, this->Width, this->Height);
+        TCODBsp bsp(0, 0, Width, Height);
         bsp.splitRecursive(nullptr, 8, ROOM_MAX_SIZE,ROOM_MAX_SIZE, 1.5f, 1.5f);
         BspListener listener(&(*this) );
         bsp.traverseInvertedLevelOrder(&listener, nullptr);

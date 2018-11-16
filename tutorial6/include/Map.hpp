@@ -6,12 +6,13 @@
 
 #include <libtcod/libtcod.hpp>
 
+#include "Point.hpp"
+
 namespace tcodtutorial
 {
     struct Room
     {
-        int X1, Y1, X2, Y2;
-        int PosX, PosY; // center of room
+        Point topleft_, bottomright_, center_;
     };
 
     struct Tile 
@@ -26,18 +27,18 @@ namespace tcodtutorial
         public:
             Map(int width, int height);
 
-            bool IsWall(int x, int y) const;
-            bool IsInFov(int x, int y) const;
-            bool IsExplored(int x, int y) const;
+            bool IsWall(Point point) const;
+            bool IsInFov(Point point) const;
+            bool IsExplored(Point point) const;
             
             const std::vector<Room>& GetRooms() const;
             
             void Render() const;
 
-            void Dig(int x1, int y1, int x2, int y2);
+            void Dig(Point point1, Point point2);
             void Dig(Room room);
             void SetExplored();
-            void ComputeFov(int x, int y, int radius);
+            void ComputeFov(Point point, int radius);
             void GenerateMap();
             
         private:
