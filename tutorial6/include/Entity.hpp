@@ -6,44 +6,47 @@
 
 #include <libtcod/libtcod.hpp>
 
-#include "AI.hpp"
-#include "Attacker.hpp"
-#include "Destructible.hpp"
+#include "GameState.hpp"
 #include "Point.hpp"
 #include "Subject.hpp"
+
+#include "Components/AiComponent.hpp"
+#include "Components/AttackerComponent.hpp"
+#include "Components/DestructibleComponent.hpp"
 
 namespace tcodtutorial
 {
     class Entity : public Subject
     {
         public:
-            Entity(Point point, int cha, std::string name, const TCODColor& color);
+            Entity(Point point, int displaycharacter, std::string name, const TCODColor& color);
 
             void Render() const;
 
+            Point GetPos() const;
             int GetX() const;
             int GetY() const;
             std::string GetName() const;
 
             void SetPos(Point point);
 
-            void SetAI(AI* ai = nullptr);
-            void SetAttacker(Attacker* attacker = nullptr);
-            void SetDestructible(Destructible* destructible = nullptr);
+            void SetAI(AiComponent* ai = nullptr);
+            void SetAttacker(AttackerComponent* attacker = nullptr);
+            void SetDestructible(DestructibleComponent* destructible = nullptr);
 
-            virtual void Update() = 0;
+            virtual void Update(World& world) = 0;
 
         protected:
-            int PosX, PosY;
-            int Char;
-            bool IsBlocker;
+            Point position_;
+            int displaycharacter_;
+            bool isblocker_;
             
-            std::string Name;
-            TCODColor Color;
+            std::string name_;
+            TCODColor color_;
 
-            std::unique_ptr<AI> EntityAI;
-            std::unique_ptr<Attacker> Attack; 
-            std::unique_ptr<Destructible> Destruct;
+            std::unique_ptr<AiComponent> ai_;
+            std::unique_ptr<AttackerComponent> attacker_; 
+            std::unique_ptr<DestructibleComponent> destructible_;
     };
 
     class Player : public Entity
@@ -51,15 +54,15 @@ namespace tcodtutorial
         public:
             Player(Point point, int cha, std::string name, const TCODColor& color);
 
-            void Update();
+            void Update(World& world);
     };
 
     class NPC : public Entity
     {
         public:
-            NPC(Point point, int cha, std::string name, const TCODColor& color);
+            NPC(Point point, int cha, std::string name, const TCODColor& color, AiComponent* ai);
 
-            void Update();
+            void Update(World& world);
     };
 }
 

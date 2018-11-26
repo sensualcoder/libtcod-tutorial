@@ -4,7 +4,7 @@ namespace tcodtutorial
 {
     static const int MAX_ROOM_MONSTERS = 3;
 
-    Engine::Engine() : map_(new Map(80, 45) ), State(STARTUP), FovRadius(10)
+    Engine::Engine() : map_(new Map(80, 45) ), state_(STARTUP), FovRadius(10)
     {
         TCODConsole::initRoot(80, 50, "libtcod C++ tutorial 6");
 
@@ -27,7 +27,7 @@ namespace tcodtutorial
         Room firstRoom = map_->GetRooms()[0];
 
         playerptr_->AddObserver(this);
-        playerptr_->SetPos(Point { firstRoom.center_.x_, firstRoom.center_.y_ } );
+        playerptr_->SetPos(firstRoom.center_);
         entitylist_.push_back(playerptr_);
 
         GenerateMonsters();
@@ -66,16 +66,15 @@ namespace tcodtutorial
         if(rng->getInt(0, 100) < 80)
         {
             monster = std::shared_ptr<NPC>(new NPC(point, 'o', "orc", 
-                TCODColor::desaturatedGreen) );
-            entitylist_.push_back(monster);
+                TCODColor::desaturatedGreen, new NpcAi() ) );   
         }
         else
         {
             monster = std::shared_ptr<NPC>(new NPC(point, 'T', "troll", 
-                TCODColor::darkerGreen) );
-            entitylist_.push_back(monster);
+                TCODColor::darkerGreen, new NpcAi() ) );
         }
         
+        entitylist_.push_back(monster);
         monster->AddObserver(this);
     }
 
@@ -85,6 +84,8 @@ namespace tcodtutorial
         {
             i->Clear();
         }
+
+        entitylist_.clear();
     }
 
     bool Engine::CanWalk(Point point) const
@@ -96,7 +97,7 @@ namespace tcodtutorial
 
         for(auto entity : entitylist_)
         {
-            if(entity->GetX() == point.x_ && entity->GetY() == point.y_)
+            if(entity->GetPos() == point)
             {
                 return false;
             }
@@ -133,50 +134,56 @@ namespace tcodtutorial
             case TCODK_RIGHT:
                 ++dx;
                 break;
+            case TCODK_HOME:
+            {
+                GenerateMap();
+                state_ = STARTUP;
+                break;
+            }
             default:
                 break;
         }
 
         if(dx != 0 || dy != 0)
         {
-            Point point 
-            { 
-                playerptr_->GetX() + dx,
-                playerptr_->GetY() + dy
-            };
+            Point point = playerptr_->GetPos();
+            point.x_ += dx;
+            point.y_ += dy;
 
             if(CanWalk(point) )
             {
                 playerptr_->SetPos(point);
-                State = NEW_TURN;
+                state_ = NEW_TURN;
             }
         }
     }
 
     void Engine::Update()
     {
-        if(State == STARTUP)
+        if(state_ == STARTUP)
         {
-            map_->ComputeFov(Point { playerptr_->GetX(), playerptr_->GetY() }, FovRadius);
+            map_->ComputeFov(playerptr_->GetPos(), FovRadius);
         }
 
-        State = IDLE;
+        state_ = IDLE;
+
+        World world { entitylist_, *map_ };
 
         HandleInput();
 
-        playerptr_->Update();
+        playerptr_->Update(world);
 
-        if(State == NEW_TURN)
+        if(state_ == NEW_TURN)
         {
-            map_->ComputeFov(Point { playerptr_->GetX(), playerptr_->GetY() }, FovRadius);
+            map_->ComputeFov(playerptr_->GetPos(), FovRadius);
             map_->SetExplored();
             
             for(auto entity : entitylist_)
             {
                 if(entity != playerptr_
-                    && map_->IsInFov(Point { entity->GetX(), entity->GetY() } ) )
+                    && map_->IsInFov(entity->GetPos() ) )
                 {
-                    entity->Update();
+                    entity->Update(world);
                 }
             }
         }
@@ -190,7 +197,7 @@ namespace tcodtutorial
 
         for(auto entity : entitylist_)
         {
-            if(map_->IsInFov(Point { entity->GetX(), entity->GetY() } ) )
+            if(map_->IsInFov(entity->GetPos() ) )
             {
                 entity->Render();
             }

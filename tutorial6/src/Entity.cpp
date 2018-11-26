@@ -2,58 +2,52 @@
 
 namespace tcodtutorial
 {
-    Entity::Entity(Point point, int cha, std::string name, const TCODColor& color) 
-        : PosX(point.x_), PosY(point.y_), Char(cha), Name(name), Color(color), IsBlocker(true),
-          EntityAI(nullptr), Attack(nullptr), Destruct(nullptr)
+    Entity::Entity(Point position, int displaycharacter, std::string name, const TCODColor& color) 
+        : position_(position), displaycharacter_(displaycharacter), name_(name), color_(color), isblocker_(true),
+          ai_(nullptr), attacker_(nullptr), destructible_(nullptr)
     {
     }
 
     void Entity::Render() const
     {
-        TCODConsole::root->setChar(PosX, PosY, Char);
-        TCODConsole::root->setCharForeground(PosX, PosY, Color);
+        TCODConsole::root->setChar(position_.x_, position_.y_, displaycharacter_);
+        TCODConsole::root->setCharForeground(position_.x_, position_.y_, color_);
     }
 
-    int Entity::GetX() const
+    Point Entity::GetPos() const
     {
-        return PosX;
-    }
-
-    int Entity::GetY() const
-    {
-        return PosY;
+        return position_;
     }
 
     std::string Entity::GetName() const
     {
-        return Name;
+        return name_;
     }
 
     void Entity::SetPos(Point point)
     {
-        PosX = point.x_;
-        PosY = point.y_;
+        position_ = point;
     }
 
-    void Entity::SetAI(AI* ai)
+    void Entity::SetAI(AiComponent* ai)
     {
         ai == nullptr 
-            ? EntityAI = std::make_unique<AI>()
-            : EntityAI = std::unique_ptr<AI>(ai);
+            ? ai_ = nullptr
+            : ai_ = std::unique_ptr<AiComponent>(ai);
     }
 
-    void Entity::SetAttacker(Attacker* attacker)
+    void Entity::SetAttacker(AttackerComponent* attacker)
     {
         attacker == nullptr 
-            ? Attack = std::make_unique<Attacker>()
-            : Attack = std::unique_ptr<Attacker>(attacker);
+            ? attacker_ = nullptr
+            : attacker_ = std::unique_ptr<AttackerComponent>(attacker);
     }
     
-    void Entity::SetDestructible(Destructible* destructible)
+    void Entity::SetDestructible(DestructibleComponent* destructible)
     {
         destructible == nullptr
-            ? Destruct = std::make_unique<Destructible>()
-            : Destruct = std::unique_ptr<Destructible>(destructible);
+            ? destructible_ = nullptr
+            : destructible_ = std::unique_ptr<DestructibleComponent>(destructible);
     }
 
     // Derived Player class
@@ -62,21 +56,19 @@ namespace tcodtutorial
     {
     }
 
-    void Player::Update()
+    void Player::Update(World& world)
     {
     }
 
     // Derived Enemy class
-    NPC::NPC(Point point, int cha, std::string name, const TCODColor& color)
+    NPC::NPC(Point point, int cha, std::string name, const TCODColor& color, AiComponent* ai)
                 : Entity(point, cha, name, color)
     {
+        SetAI(ai);
     }
 
-    void NPC::Update()
+    void NPC::Update(World& world)
     {
-        if(EntityAI)
-        {
-            EntityAI->Update(this);
-        }
+        ai_->Update(this, world);
     }
 }

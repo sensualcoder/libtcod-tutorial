@@ -42,7 +42,7 @@ namespace tcodtutorial
             std::unique_ptr<Map> map_;
 
             int FovRadius;
-            GameState_t State;
+            GameState_t state_;
     };
 }
 
